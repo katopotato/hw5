@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -57,12 +58,28 @@ func handlePata(w http.ResponseWriter, r *http.Request) {
 	// が出来ます。）
 	aMoji := []rune(content.A)
 	bMoji := []rune(content.B)
+	fmt.Fprint(w, "hello world")
+	var result []rune
 	// とりあえずPataを簡単な操作で設定しますけど、すこし工夫をすれば
 	// パタトクカシーーができます。
-	pata := append(aMoji, bMoji...)
+	//pata := "something" //append(aMoji, bMoji...)
+	aIndex, bIndex := 0, 0
+	totalLength := len(aMoji) + len(bMoji)
+	for (aIndex + bIndex) < totalLength {
+		if aIndex < len(aMoji) {
+			fmt.Println("appended:", string(aMoji[aIndex]))
+			result = append(result, aMoji[aIndex])
+			aIndex++
+		}
+		if bIndex < len(bMoji) {
+			fmt.Println("appended:", string(bMoji[bIndex]))
+			result = append(result, bMoji[bIndex])
+			bIndex++
+		}
+	}
 	// []runeからstringに戻して、テンプレートで使うcontent.Pataの変数
 	// に入れておきます。
-	content.Pata = string(pata)
+	content.Pata = string(result)
 
 	// example.htmlというtemplateをcontentの内容を使って、{{.A}}などのとこ
 	// ろを実行して、内容を埋めて、wに書き込む。
@@ -78,6 +95,10 @@ func handlePata(w http.ResponseWriter, r *http.Request) {
 type Line struct {
 	Name     string
 	Stations []string
+}
+type Norikae struct {
+	Start string
+	Dest  string
 }
 
 // TransitNetworkは http://fantasy-transit.appspot.com/net?format=json
@@ -107,6 +128,15 @@ func handleNorikae(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	/*start := r.FormValue("start")
+	dest := r.FormValue("dest")
+	network.Start = start
+	network.Dest = dest*/
+	/*content := Norikae{
+		Start: start,
+		Dest:  r.FormValue("dest"),
+	}*/
+	fmt.Println("starting from:" + start + ", dest:" + dest)
 	// handleExampleと同じようにtemplateにテンプレートを埋めて、出力する。
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	err = tmpl.ExecuteTemplate(w, "norikae.html", network)
@@ -114,4 +144,5 @@ func handleNorikae(w http.ResponseWriter, r *http.Request) {
 		// もしテンプレートに問題があったらこのエラーが出ます。
 		log.Errorf(ctx, "rendering template norikae.html failed: %v", err)
 	}
+	// onform submit, get a new one.
 }
