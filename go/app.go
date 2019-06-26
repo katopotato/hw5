@@ -103,7 +103,11 @@ type Norikae struct {
 
 // TransitNetworkは http://fantasy-transit.appspot.com/net?format=json
 // の一番外側のリストのことを表しています。
-type TransitNetwork []Line
+type TransitNetwork struct {
+	Network  []Line
+	Norikae  Norikae
+	CurrLine string
+}
 
 func handleNorikae(w http.ResponseWriter, r *http.Request) {
 	// Appengineの「Context」を通してAppengineのAPIを利用する。
@@ -123,23 +127,35 @@ func handleNorikae(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(resp.Body)
 
 	// JSONをパースして、「network」に保存する。
-	var network TransitNetwork
-	if err := decoder.Decode(&network); err != nil {
+	var transitNetwork TransitNetwork
+	if err := decoder.Decode(&transitNetwork.Network); err != nil {
 		panic(err)
 	}
 
-	/*start := r.FormValue("start")
-	dest := r.FormValue("dest")
-	network.Start = start
-	network.Dest = dest*/
+	start, dest := "defaultValue", "defaultValue"
+	start = string([]rune(r.FormValue("start")))
+	dest = string([]rune(r.FormValue("dest")))
+	var norikae Norikae
+	norikae.Start = start
+	norikae.Dest = dest
+	transitNetwork.Norikae = norikae
+	transitNetwork.CurrLine = "test"
+	for _, line := range transitNetwork.Network {
+		for _, station := range line.Stations {
+			if station == start || station == dest {
+				transitNetwork.CurrLine = line.Name
+				break
+			}
+		}
+	}
 	/*content := Norikae{
 		Start: start,
 		Dest:  r.FormValue("dest"),
-	}*/
+	}
 	fmt.Println("starting from:" + start + ", dest:" + dest)
 	// handleExampleと同じようにtemplateにテンプレートを埋めて、出力する。
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = tmpl.ExecuteTemplate(w, "norikae.html", network)
+	*/w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err = tmpl.ExecuteTemplate(w, "norikae.html", transitNetwork)
 	if err != nil {
 		// もしテンプレートに問題があったらこのエラーが出ます。
 		log.Errorf(ctx, "rendering template norikae.html failed: %v", err)
